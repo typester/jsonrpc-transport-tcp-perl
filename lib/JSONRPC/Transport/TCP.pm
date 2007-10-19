@@ -13,33 +13,43 @@ our $VERSION = '0.01';
 
 =head1 NAME
 
-JSONRPC::Transport::TCP - Module abstract (<= 44 characters) goes here
+JSONRPC::Transport::TCP - Client component for TCP JSONRPC
 
 =head1 SYNOPSIS
 
-use JSONRPC::Transport::TCP;
-
-    my $rpc = JSONRPC::Transport::TCP->new( host => '127.0.0.1', port => 3000 );
-    my $res = $rpc->call('echo', 'arg1', 'arg2' );
+    use JSONRPC::Transport::TCP;
     
-    if ($res->error) {
-        warn $res->error;
-    }
-    else {
-        print $res->result;
-    }
+    my $rpc = JSONRPC::Transport::TCP->new( host => '127.0.0.1', port => 3000 );
+    my $res = $rpc->call('echo', 'arg1', 'arg2' )
+        or die $rpc->error;
+    
+    print $res->result;
 
 =head1 DESCRIPTION
 
-Stub documentation for this module was created by ExtUtils::ModuleMaker.
-It looks like the author of the extension was negligent enough
-to leave the stub unedited.
+This module is a simple client side implementation about JSONRPC via TCP.
 
-Blah blah blah.
+This module doen't support continual tcp streams, and so it open/close connection on each request.
 
 =head1 METHODS
 
 =head2 new
+
+Create new client object.
+
+Parameters:
+
+=over
+
+=item host
+
+Hostname or ip address to connect
+
+=item port
+
+Port number to connect
+
+=back
 
 =cut
 
@@ -54,6 +64,10 @@ sub new {
 }
 
 =head2 connect
+
+Connect remote host.
+
+This module automatically connect on following "call" method, so you have not to call this method.
 
 =cut
 
@@ -88,6 +102,8 @@ sub connect {
 
 =head2 disconnect
 
+Disconnect the connection
+
 =cut
 
 sub disconnect {
@@ -95,7 +111,27 @@ sub disconnect {
     delete $self->{socket} if $self->{socket};
 }
 
-=head2 call
+=head2 call($method_name, @params)
+
+Call remote method.
+
+When remote method is success, it returns self object that contains result as ->result accessor.
+
+If some error are occured, it returns undef, and you can check the error by ->error accessor.
+
+Parameters:
+
+=over
+
+=item $method_name
+
+Remote method name to call
+
+=item @params
+
+Remote method parameters.
+
+=back
 
 =cut
 
@@ -161,12 +197,24 @@ sub call {
 
 =head2 DESTROY
 
+Automatically disconnect when object destroy.
+
 =cut
 
 sub DESTROY {
     my $self = shift;
     $self->disconnect;
 }
+
+=head1 ACCESSORS
+
+=head2 result
+
+Contains result of remote method
+
+=head2 error
+
+Conteins error of remote method
 
 =head1 AUTHOR
 
