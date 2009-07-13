@@ -82,7 +82,7 @@ sub connect {
         $socket = IO::Socket::INET->new(
             PeerAddr => $params->{host}  || $self->{host},
             PeerPort => $self->{port}    || $self->{port},
-            xxProto  => 'tcp',
+            Proto    => 'tcp',
             Timeout  => $self->{timeout} || 30,
         )
           or croak
