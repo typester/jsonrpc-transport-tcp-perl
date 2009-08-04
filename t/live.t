@@ -4,7 +4,7 @@ use Test::TCP;
 eval "use AnyEvent::JSONRPC::Lite::Server";
 plan skip_all => "AnyEvent::JSONRPC::Lite::Server required to run this test" if $@;
 
-plan tests => 2;
+plan tests => 4;
 
 my $port = empty_port;
 

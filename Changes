@@ -1,4 +1,7 @@
 Revision history for Perl extension JSONRPC::Transport::TCP
 
+0.02  2009-08-04T22:56:29+09:00
+      - imploved JSON response parsing by using incr_parse on JSON(::XS) module
+
 0.01  2007-10-19T16:34:45+09:00
       - original version

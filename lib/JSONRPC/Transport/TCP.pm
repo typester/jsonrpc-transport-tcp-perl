@@ -8,7 +8,7 @@ __PACKAGE__->mk_accessors(qw/result error/);
 use IO::Socket::INET;
 use Carp;
 
-our $VERSION = '0.01';
+our $VERSION = '0.02';
 our $XS_AVAILABLE = 1;
 
 BEGIN {
