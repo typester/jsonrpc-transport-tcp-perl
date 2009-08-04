@@ -6,10 +6,18 @@ use base qw/Class::Accessor::Fast/;
 __PACKAGE__->mk_accessors(qw/result error/);
 
 use IO::Socket::INET;
-use JSON::Any;
 use Carp;
 
 our $VERSION = '0.01';
+our $XS_AVAILABLE = 1;
+
+BEGIN {
+    eval { require JSON::XS };
+    if ($@) {
+        $XS_AVAILABLE = 0;
+        require JSON;
+    }
+}
 
 =head1 NAME
 
@@ -57,8 +65,8 @@ sub new {
     my $self = shift->SUPER::new( @_ > 1 ? {@_} : $_[0] );
 
     $self->{id} = 0;
-    $self->{json} ||= JSON::Any->new;
-    $self->{delimiter} ||= "\n";
+    $self->{json} ||= $XS_AVAILABLE ? JSON::XS->new->utf8 : JSON->new->utf8;
+    $self->{delimiter} ||= q[];
 
     $self;
 }
@@ -146,8 +154,7 @@ sub call {
         method => $method,
         params => \@params,
     };
-
-    $self->{socket}->print($self->{json}->Dump($request) . $self->{delimiter});
+    $self->{socket}->print($self->{json}->encode($request) . $self->{delimiter});
 
     my $timeout = $self->{socket}->timeout;
     my $limit   = time + $timeout;
@@ -171,24 +178,28 @@ sub call {
             croak qq/Error reading: $e/;
         }
 
-        if (my ($json) = $buf =~ /^(.*)$self->{delimiter}/) {
-            my $result;
-            eval {
-                $result = $self->{json}->Load($json);
-            };
-            if ($@) {
-                $self->{error} = "json parse error: $@";
-                return;
-            }
+        my $json = eval { $self->{json}->incr_parse($buf) };
 
-            if ($result->{error}) {
-                $self->{error} = $result->{error};
+        if ($@) {
+            $self->{error} = $@;
+            $self->disconnect;
+            return;
+        }
+        elsif ($json) {
+            if ($json->{error}) {
+                $self->{error} = $json->{error};
+                $self->disconnect;
                 return;
             }
             else {
-                $self->{result} = $result->{result};
+                $self->{result} = $json->{result};
+                $self->disconnect;
                 return $self;
             }
+        }
+        else {
+            $buf = '';
+            next;
         }
     }
 

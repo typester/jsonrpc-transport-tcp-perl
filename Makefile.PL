@@ -7,7 +7,9 @@ build_requires 'Test::More';
 requires 'Class::Accessor::Fast';
 requires 'IO::Socket::INET';
 requires 'Carp';
-requires 'JSON::Any';
+requires 'JSON';
+
+recommends 'JSON::XS';
 
 use_test_base;
 auto_include;
