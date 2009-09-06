@@ -5,10 +5,12 @@ use base qw/Class::Accessor::Fast/;
 
 __PACKAGE__->mk_accessors(qw/result error/);
 
+use IO::Select;
 use IO::Socket::INET;
+use IO::Socket::UNIX;
 use Carp;
 
-our $VERSION = '0.02';
+our $VERSION = '0.03';
 our $XS_AVAILABLE = 1;
 
 BEGIN {
@@ -18,6 +20,8 @@ BEGIN {
         require JSON;
     }
 }
+
+=for stopwords Hostname Str tcp ip unix
 
 =head1 NAME
 
@@ -37,7 +41,7 @@ JSONRPC::Transport::TCP - Client component for TCP JSONRPC
 
 This module is a simple client side implementation about JSONRPC via TCP.
 
-This module doen't support continual tcp streams, and so it open/close connection on each request.
+This module doesn't support continual tcp streams, and so it open/close connection on each request.
 
 =head1 METHODS
 
@@ -49,13 +53,15 @@ Parameters:
 
 =over
 
-=item host
+=item host => 'Str'
 
-Hostname or ip address to connect
+Hostname or ip address to connect.
 
-=item port
+This should be set 'unix/' when you want to connect to unix socket.
 
-Port number to connect
+=item port => 'Int | Str'
+
+Port number or unix socket path to connect
 
 =back
 
@@ -87,14 +93,26 @@ sub connect {
 
     my $socket;
     eval {
-        $socket = IO::Socket::INET->new(
-            PeerAddr => $params->{host}  || $self->{host},
-            PeerPort => $self->{port}    || $self->{port},
-            Proto    => 'tcp',
-            Timeout  => $self->{timeout} || 30,
-        )
-          or croak
-            qq/Unable to connect to "@{[ $params->{host}  || $self->{host} ]}:@{[ $params->{port}  || $self->{port} ]}": $!/;
+        # unix socket
+        my $host = $params->{host} || $self->{host};
+        my $port = $params->{port} || $self->{port};
+
+        if ($host eq 'unix/') {
+            $socket = IO::Socket::UNIX->new(
+                Peer    => $port,
+                Timeout => $self->{timeout} || 30,
+            ) or croak qq/Unable to connect to unix socket "$port": $!/;
+        }
+        else {
+            $socket = IO::Socket::INET->new(
+                PeerAddr => $host,
+                PeerPort => $port,
+                Proto    => 'tcp',
+                Timeout  => $self->{timeout} || 30,
+            )
+                or croak
+                    qq/Unable to connect to "@{[ $params->{host}  || $self->{host} ]}:@{[ $params->{port}  || $self->{port} ]}": $!/;
+        }
 
         $socket->autoflush(1);
 
@@ -125,7 +143,7 @@ Call remote method.
 
 When remote method is success, it returns self object that contains result as ->result accessor.
 
-If some error are occured, it returns undef, and you can check the error by ->error accessor.
+If some error are occurred, it returns undef, and you can check the error by ->error accessor.
 
 Parameters:
 
@@ -225,7 +243,7 @@ Contains result of remote method
 
 =head2 error
 
-Conteins error of remote method
+Contains error of remote method
 
 =head1 AUTHOR
 
