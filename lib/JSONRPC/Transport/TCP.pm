@@ -10,7 +10,7 @@ use IO::Socket::INET;
 use IO::Socket::UNIX;
 use Carp;
 
-our $VERSION = '0.03';
+our $VERSION = '0.04';
 our $XS_AVAILABLE = 1;
 
 BEGIN {
